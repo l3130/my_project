@@ -5,12 +5,16 @@ __pycache__/
 # Ignore logs
 *.log
 
-# Ignore SQLite databases (if you use one)
+# Ignore SQLite databases
 *.sqlite
 
 # Ignore virtual environments
+.venv/
 venv/
 env/
+
+# Ignore VS Code settings
+.vscode/
 
 # Ignore system files
 .DS_Store
