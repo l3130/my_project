@@ -1,6 +1,18 @@
 import csv
+import shutil
+import os
+import matplotlib.pyplot as plt
 from datetime import datetime
 from tabulate import tabulate
+
+
+def backup_transactions():
+    if os.path.exists('data/transactions.csv'):
+        shutil.copy('data/transactions.csv', 'data/transactions_backup.csv')
+        print("Backup created successfully!")
+    else:
+        print("No transactions file found to back up.")
+
 
 def add_transaction():
     try:
@@ -93,6 +105,9 @@ def main():
         print("2. View Transactions")
         print("3. Show Summary")
         print("4. Exit")
+        print("5. Backup Transactions")
+        print("6. Visualize Spending")
+        print("7. Visualize Trends")  # <-- Added this line
 
         choice = input("Choose an option: ").strip()
 
@@ -105,8 +120,77 @@ def main():
         elif choice == "4":
             print("Goodbye!")
             break
+        elif choice == "5":
+            backup_transactions()
+        elif choice == "6":  # <-- Added this branch
+            visualize_spending()
+        elif choice == "7":  # <-- Added this branch
+            visualize_trends()
         else:
             print("Invalid choice. Please try again.")
+def visualize_spending():
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            # Aggregate totals by category
+            category_totals = {}
+            for row in transactions:
+                amount = float(row[0])
+                category = row[1]
+                category_totals[category] = category_totals.get(category, 0) + amount
+
+            # Create pie chart
+            labels = category_totals.keys()
+            sizes = category_totals.values()
+
+            plt.figure(figsize=(6,6))
+            plt.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=140)
+            plt.title("Spending by Category")
+            plt.show()
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
+
+def visualize_trends():
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            # Aggregate totals by date
+            date_totals = {}
+            for row in transactions:
+                amount = float(row[0])
+                date = row[2]
+                date_totals[date] = date_totals.get(date, 0) + amount
+
+            # Sort by date
+            sorted_dates = sorted(date_totals.keys())
+            amounts = [date_totals[d] for d in sorted_dates]
+
+            # Plot line chart
+            plt.figure(figsize=(8,5))
+            plt.plot(sorted_dates, amounts, marker="o", linestyle="-", color="blue")
+            plt.xticks(rotation=45)
+            plt.xlabel("Date")
+            plt.ylabel("Total Spending")
+            plt.title("Spending Over Time")
+            plt.tight_layout()
+            plt.show()
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
 
 if __name__ == "__main__":
     main()
