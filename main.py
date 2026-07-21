@@ -98,6 +98,43 @@ def show_summary():
         print("No transactions file found yet.")
 
 
+def export_summary():
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            total = 0
+            category_totals = {}
+
+            for row in transactions:
+                amount = float(row[0])
+                category = row[1]
+                total += amount
+                category_totals[category] = category_totals.get(category, 0) + amount
+
+            summary_lines = [
+                "Finance Summary",
+                f"Total Spending: {total}",
+                "Category Breakdown:",
+            ]
+            for category, amount in category_totals.items():
+                summary_lines.append(f"{category}: {amount}")
+
+            os.makedirs("data", exist_ok=True)
+            with open("data/summary_export.txt", mode="w") as output_file:
+                output_file.write("\n".join(summary_lines))
+
+            print("Summary exported to data/summary_export.txt")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
+
 def main():
     while True:
         print("\nWelcome to Personal Finance Tracker!")
@@ -107,7 +144,10 @@ def main():
         print("4. Exit")
         print("5. Backup Transactions")
         print("6. Visualize Spending")
-        print("7. Visualize Trends")  # <-- Added this line
+        print("7. Visualize Trends") 
+        print("8. Export Summary")
+        print("9. Check Budget")
+
 
         choice = input("Choose an option: ").strip()
 
@@ -126,6 +166,17 @@ def main():
             visualize_spending()
         elif choice == "7":  # <-- Added this branch
             visualize_trends()
+        elif choice == "8": 
+            export_summary()
+        elif choice == "9":
+            try:
+                limit = float(input("Enter your budget limit: "))
+                if limit <= 0:
+                    print("Budget limit must be positive.")
+                    continue
+                check_budget(limit)
+            except ValueError:
+                print("Invalid input. Please enter a number.")
         else:
             print("Invalid choice. Please try again.")
 def visualize_spending():
@@ -191,6 +242,34 @@ def visualize_trends():
 
     except FileNotFoundError:
         print("No transactions file found yet.")
+
+
+def check_budget(limit):
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            total = sum(float(row[0]) for row in transactions)
+
+            print(f"\n--- Budget Check ---")
+            print(f"Budget Limit: {limit}")
+            print(f"Total Spending: {total}")
+
+            if total >= limit:
+                print("⚠️ You have exceeded your budget!")
+            elif total >= 0.8 * limit:
+                print("⚠️ Warning: You are close to your budget limit.")
+            else:
+                print("✅ You are within your budget.")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
 
 if __name__ == "__main__":
     main()
