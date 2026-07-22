@@ -147,6 +147,8 @@ def main():
         print("7. Visualize Trends") 
         print("8. Export Summary")
         print("9. Check Budget")
+        print("10. Check Category Budgets")  # <-- Added
+
 
 
         choice = input("Choose an option: ").strip()
@@ -169,6 +171,7 @@ def main():
         elif choice == "8": 
             export_summary()
         elif choice == "9":
+        
             try:
                 limit = float(input("Enter your budget limit: "))
                 if limit <= 0:
@@ -177,8 +180,28 @@ def main():
                 check_budget(limit)
             except ValueError:
                 print("Invalid input. Please enter a number.")
+
+
+        elif choice == "10":
+            budgets = {}
+            while True:
+                cat = input("Enter category name (or press Enter to stop): ").strip()
+                if not cat:
+                    break
+                try:
+                    limit = float(input(f"Enter budget limit for {cat}: "))
+                    if limit <= 0:
+                        print("Limit must be positive.")
+                        continue
+                    budgets[cat] = limit
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            if budgets:
+                check_category_budgets(budgets)
         else:
             print("Invalid choice. Please try again.")
+
+        
 def visualize_spending():
     try:
         with open("data/transactions.csv", mode="r") as file:
@@ -269,6 +292,40 @@ def check_budget(limit):
 
     except FileNotFoundError:
         print("No transactions file found yet.")
+
+
+def check_category_budgets(budgets):
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            # Aggregate totals by category
+            category_totals = {}
+            for row in transactions:
+                amount = float(row[0])
+                category = row[1]
+                category_totals[category] = category_totals.get(category, 0) + amount
+
+            print("\n--- Category Budget Check ---")
+            for category, limit in budgets.items():
+                spent = category_totals.get(category, 0)
+                print(f"{category}: spent {spent}, limit {limit}")
+
+                if spent >= limit:
+                    print(f"⚠️ {category} budget exceeded!")
+                elif spent >= 0.8 * limit:
+                    print(f"⚠️ {category} budget close to limit.")
+                else:
+                    print(f"✅ {category} budget is fine.")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
 
 
 if __name__ == "__main__":
