@@ -135,6 +135,30 @@ def export_summary():
         print("No transactions file found yet.")
 
 
+def load_category_budgets(filename="data/category_budgets.csv"):
+    budgets = {}
+    try:
+        with open(filename, mode="r") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                budgets[row["Category"]] = float(row["Limit"])
+    except FileNotFoundError:
+        print("No saved category budgets found yet.")
+    return budgets
+
+
+def save_category_budgets(budgets, filename="data/category_budgets.csv"):
+    os.makedirs("data", exist_ok=True)
+    with open(filename, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Category", "Limit"])
+        for category, limit in budgets.items():
+            writer.writerow([category, limit])
+    print(f"Category budgets saved to {filename}")
+
+
+
+
 def main():
     while True:
         print("\nWelcome to Personal Finance Tracker!")
@@ -148,6 +172,8 @@ def main():
         print("8. Export Summary")
         print("9. Check Budget")
         print("10. Check Category Budgets")  # <-- Added
+        print("11. Update Category Budgets") 
+        print("12. Visualize Budgets vs Spending")
 
 
 
@@ -171,7 +197,6 @@ def main():
         elif choice == "8": 
             export_summary()
         elif choice == "9":
-        
             try:
                 limit = float(input("Enter your budget limit: "))
                 if limit <= 0:
@@ -181,23 +206,31 @@ def main():
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
-
         elif choice == "10":
-            budgets = {}
-            while True:
-                cat = input("Enter category name (or press Enter to stop): ").strip()
-                if not cat:
-                    break
-                try:
-                    limit = float(input(f"Enter budget limit for {cat}: "))
-                    if limit <= 0:
-                        print("Limit must be positive.")
-                        continue
-                    budgets[cat] = limit
-                except ValueError:
-                    print("Invalid input. Please enter a number.")
-            if budgets:
-                check_category_budgets(budgets)
+            budgets = load_category_budgets()
+            if not budgets:
+                print("No budgets saved. Let's create them.")
+                budgets = {}
+                while True:
+                    cat = input("Enter category name (or press Enter to stop): ").strip()
+                    if not cat:
+                        break
+                    try:
+                        limit = float(input(f"Enter budget limit for {cat}: "))
+                        if limit <= 0:
+                            print("Limit must be positive.")
+                            continue
+                        budgets[cat] = limit
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                if budgets:
+                    save_category_budgets(budgets)
+            check_category_budgets(budgets)
+
+        elif choice == "11":
+            update_category_budgets()
+        elif choice == "12":
+            visualize_budgets_vs_spending()
         else:
             print("Invalid choice. Please try again.")
 
@@ -325,6 +358,77 @@ def check_category_budgets(budgets):
 
     except FileNotFoundError:
         print("No transactions file found yet.")
+
+
+
+def update_category_budgets(filename="data/category_budgets.csv"):
+    budgets = load_category_budgets(filename)
+
+    if not budgets:
+        print("No budgets saved yet. Let's create them.")
+        budgets = {}
+
+    while True:
+        cat = input("Enter category name to update (or press Enter to stop): ").strip()
+        if not cat:
+            break
+        try:
+            limit = float(input(f"Enter new budget limit for {cat}: "))
+            if limit <= 0:
+                print("Limit must be positive.")
+                continue
+            budgets[cat] = limit
+            print(f"Updated {cat} budget to {limit}")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+    if budgets:
+        save_category_budgets(budgets, filename)
+
+
+def visualize_budgets_vs_spending():
+    budgets = load_category_budgets()
+    if not budgets:
+        print("No saved category budgets found yet.")
+        return
+
+    try:
+        with open("data/transactions.csv", mode="r") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            # Aggregate totals by category
+            category_totals = {}
+            for row in transactions:
+                amount = float(row[0])
+                category = row[1]
+                category_totals[category] = category_totals.get(category, 0) + amount
+
+            # Prepare data for plotting
+            categories = list(budgets.keys())
+            limits = [budgets[cat] for cat in categories]
+            spent = [category_totals.get(cat, 0) for cat in categories]
+
+            # Plot side-by-side bars
+            x = range(len(categories))
+            plt.figure(figsize=(8,5))
+            plt.bar(x, limits, width=0.4, label="Budget Limit", color="green", align="center")
+            plt.bar([i+0.4 for i in x], spent, width=0.4, label="Actual Spending", color="red", align="center")
+
+            plt.xticks([i+0.2 for i in x], categories, rotation=45)
+            plt.ylabel("Amount")
+            plt.title("Budgets vs. Spending by Category")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
 
 
 
