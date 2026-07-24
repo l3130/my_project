@@ -408,16 +408,30 @@ def visualize_budgets_vs_spending():
                 category = row[1]
                 category_totals[category] = category_totals.get(category, 0) + amount
 
-            # Prepare data for plotting
+            # Prepare data
             categories = list(budgets.keys())
             limits = [budgets[cat] for cat in categories]
             spent = [category_totals.get(cat, 0) for cat in categories]
 
-            # Plot side-by-side bars
+            # Dynamic colors and text summary
+            colors = []
+            print("\n--- Budget Status ---")
+            for cat, limit, actual in zip(categories, limits, spent):
+                if actual >= limit:
+                    colors.append("red")
+                    print(f"⚠️ {cat}: spent {actual}, limit {limit} → OVERSPENT")
+                elif actual >= 0.8 * limit:
+                    colors.append("yellow")
+                    print(f"⚠️ {cat}: spent {actual}, limit {limit} → CLOSE TO LIMIT")
+                else:
+                    colors.append("green")
+                    print(f"✅ {cat}: spent {actual}, limit {limit} → SAFE")
+
+            # Plot
             x = range(len(categories))
             plt.figure(figsize=(8,5))
-            plt.bar(x, limits, width=0.4, label="Budget Limit", color="green", align="center")
-            plt.bar([i+0.4 for i in x], spent, width=0.4, label="Actual Spending", color="red", align="center")
+            plt.bar(x, limits, width=0.4, label="Budget Limit", color="lightblue", align="center")
+            plt.bar([i+0.4 for i in x], spent, width=0.4, label="Actual Spending", color=colors, align="center")
 
             plt.xticks([i+0.2 for i in x], categories, rotation=45)
             plt.ylabel("Amount")
