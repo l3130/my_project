@@ -1,14 +1,51 @@
 import csv
 import shutil
 import os
+import sys
+from pathlib import Path
 import matplotlib.pyplot as plt
 from datetime import datetime
 from tabulate import tabulate
 
 
+def resolve_data_path(relative_path):
+    relative_path = Path(relative_path)
+    if relative_path.is_absolute():
+        return relative_path
+
+    search_roots = []
+    if getattr(sys, "frozen", False):
+        executable_dir = Path(sys.executable).resolve().parent
+        meipass_dir = Path(getattr(sys, "_MEIPASS", executable_dir)).resolve()
+        search_roots.extend([executable_dir, executable_dir.parent, meipass_dir, meipass_dir.parent])
+    else:
+        script_dir = Path(__file__).resolve().parent
+        search_roots.extend([script_dir, script_dir.parent, Path.cwd()])
+
+    search_roots.append(Path.cwd())
+
+    seen_roots = set()
+    for root in search_roots:
+        normalized_root = root.resolve()
+        if normalized_root in seen_roots:
+            continue
+        seen_roots.add(normalized_root)
+
+        candidate = (normalized_root / relative_path).resolve()
+        if candidate.exists():
+            return candidate
+
+    fallback_root = search_roots[0]
+    return (fallback_root / relative_path).resolve()
+
+
 def backup_transactions():
-    if os.path.exists('data/transactions.csv'):
-        shutil.copy('data/transactions.csv', 'data/transactions_backup.csv')
+    transactions_path = resolve_data_path("data/transactions.csv")
+    backup_path = resolve_data_path("data/transactions_backup.csv")
+
+    if transactions_path.exists():
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(transactions_path, backup_path)
         print("Backup created successfully!")
     else:
         print("No transactions file found to back up.")
@@ -34,7 +71,9 @@ def add_transaction():
             return
 
         # Save to CSV
-        with open("data/transactions.csv", mode="a", newline="") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        transactions_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(transactions_path, mode="a", newline="") as file:
             writer = csv.writer(file)
             writer.writerow([amount, category, date_str])
 
@@ -45,7 +84,8 @@ def add_transaction():
 
 def view_transactions():
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -62,7 +102,8 @@ def view_transactions():
 
 def show_summary():
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -100,7 +141,8 @@ def show_summary():
 
 def export_summary():
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -125,11 +167,12 @@ def export_summary():
             for category, amount in category_totals.items():
                 summary_lines.append(f"{category}: {amount}")
 
-            os.makedirs("data", exist_ok=True)
-            with open("data/summary_export.txt", mode="w") as output_file:
+            summary_path = resolve_data_path("data/summary_export.txt")
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(summary_path, mode="w") as output_file:
                 output_file.write("\n".join(summary_lines))
 
-            print("Summary exported to data/summary_export.txt")
+            print(f"Summary exported to {summary_path}")
 
     except FileNotFoundError:
         print("No transactions file found yet.")
@@ -138,7 +181,8 @@ def export_summary():
 def load_category_budgets(filename="data/category_budgets.csv"):
     budgets = {}
     try:
-        with open(filename, mode="r") as file:
+        budgets_path = resolve_data_path(filename)
+        with open(budgets_path, mode="r") as file:
             reader = csv.DictReader(file)
             for row in reader:
                 budgets[row["Category"]] = float(row["Limit"])
@@ -148,13 +192,14 @@ def load_category_budgets(filename="data/category_budgets.csv"):
 
 
 def save_category_budgets(budgets, filename="data/category_budgets.csv"):
-    os.makedirs("data", exist_ok=True)
-    with open(filename, mode="w", newline="") as file:
+    budgets_path = resolve_data_path(filename)
+    budgets_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(budgets_path, mode="w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["Category", "Limit"])
         for category, limit in budgets.items():
             writer.writerow([category, limit])
-    print(f"Category budgets saved to {filename}")
+    print(f"Category budgets saved to {budgets_path}")
 
 
 
@@ -237,7 +282,8 @@ def main():
         
 def visualize_spending():
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -267,7 +313,8 @@ def visualize_spending():
 
 def visualize_trends():
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -302,7 +349,8 @@ def visualize_trends():
 
 def check_budget(limit):
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -329,7 +377,8 @@ def check_budget(limit):
 
 def check_category_budgets(budgets):
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
@@ -393,7 +442,8 @@ def visualize_budgets_vs_spending():
         return
 
     try:
-        with open("data/transactions.csv", mode="r") as file:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r") as file:
             reader = csv.reader(file)
             transactions = list(reader)
 
