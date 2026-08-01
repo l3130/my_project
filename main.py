@@ -1,285 +1,66 @@
 import csv
-import shutil
-import os
-import sys
-from pathlib import Path
 import matplotlib.pyplot as plt
-from datetime import datetime
-from tabulate import tabulate
 
+# ---------- Helpers for file-based input ----------
 
-def resolve_data_path(relative_path):
-    relative_path = Path(relative_path)
-    if relative_path.is_absolute():
-        return relative_path
-
-    search_roots = []
-    if getattr(sys, "frozen", False):
-        executable_dir = Path(sys.executable).resolve().parent
-        meipass_dir = Path(getattr(sys, "_MEIPASS", executable_dir)).resolve()
-        search_roots.extend([executable_dir, executable_dir.parent, meipass_dir, meipass_dir.parent])
-    else:
-        script_dir = Path(__file__).resolve().parent
-        search_roots.extend([script_dir, script_dir.parent, Path.cwd()])
-
-    search_roots.append(Path.cwd())
-
-    seen_roots = set()
-    for root in search_roots:
-        normalized_root = root.resolve()
-        if normalized_root in seen_roots:
-            continue
-        seen_roots.add(normalized_root)
-
-        candidate = (normalized_root / relative_path).resolve()
-        if candidate.exists():
-            return candidate
-
-    fallback_root = search_roots[0]
-    return (fallback_root / relative_path).resolve()
-
-
-def backup_transactions():
-    transactions_path = resolve_data_path("data/transactions.csv")
-    backup_path = resolve_data_path("data/transactions_backup.csv")
-
-    if transactions_path.exists():
-        backup_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(transactions_path, backup_path)
-        print("Backup created successfully!")
-    else:
-        print("No transactions file found to back up.")
-
-
-def add_transaction():
+def get_choice():
     try:
-        amount = float(input("Enter amount: "))
-        if amount <= 0:
-            print("Amount must be positive.")
-            return
-
-        category = input("Enter category: ").strip()
-        if not category:
-            print("Category cannot be empty.")
-            return
-
-        date_str = input("Enter date (YYYY-MM-DD): ").strip()
-        try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            print("Invalid date format. Use YYYY-MM-DD.")
-            return
-
-        # Save to CSV
-        transactions_path = resolve_data_path("data/transactions.csv")
-        transactions_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(transactions_path, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([amount, category, date_str])
-
-        print("Transaction added successfully!")
-
-    except ValueError:
-        print("Invalid amount. Please enter a number.")
-
-def view_transactions():
-    try:
-        transactions_path = resolve_data_path("data/transactions.csv")
-        with open(transactions_path, mode="r") as file:
-            reader = csv.reader(file)
-            transactions = list(reader)
-
-            if not transactions:
-                print("No transactions found yet.")
-                return
-
-            headers = ["Amount", "Category", "Date"]
-            print("\n--- Transactions ---")
-            print(tabulate(transactions, headers=headers, tablefmt="grid"))
-
+        with open("config.txt") as f:
+            for line in f:
+                if line.startswith("choice="):
+                    return line.split("=")[1].strip()
     except FileNotFoundError:
-        print("No transactions file found yet.")
+        return "4"  # default: exit
+    return "4"
 
-def show_summary():
+def get_budget_limit():
     try:
-        transactions_path = resolve_data_path("data/transactions.csv")
-        with open(transactions_path, mode="r") as file:
-            reader = csv.reader(file)
-            transactions = list(reader)
+        with open("budget.txt") as f:
+            for line in f:
+                if line.startswith("limit="):
+                    return float(line.split("=")[1].strip())
+    except:
+        return 0
+    return 0
 
-            if not transactions:
-                print("No transactions found yet.")
-                return
-
-            total = 0
-            category_totals = {}
-
-            for row in transactions:
-                amount = float(row[0])
-                category = row[1]
-                total += amount
-                category_totals[category] = category_totals.get(category, 0) + amount
-
-            # Display summary
-            print("\n--- Summary ---")
-            print(f"Total Spending: {total}")
-
-            # Category breakdown in table
-            headers = ["Category", "Total Spent"]
-            table = [(cat, amt) for cat, amt in category_totals.items()]
-            print(tabulate(table, headers=headers, tablefmt="grid"))
-
-            # Top 3 categories
-            top_categories = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)[:3]
-            print("\nTop 3 Expense Categories:")
-            for category, amt in top_categories:
-                print(f"{category}: {amt}")
-
-    except FileNotFoundError:
-        print("No transactions file found yet.")
-
-
-def export_summary():
-    try:
-        transactions_path = resolve_data_path("data/transactions.csv")
-        with open(transactions_path, mode="r") as file:
-            reader = csv.reader(file)
-            transactions = list(reader)
-
-            if not transactions:
-                print("No transactions found yet.")
-                return
-
-            total = 0
-            category_totals = {}
-
-            for row in transactions:
-                amount = float(row[0])
-                category = row[1]
-                total += amount
-                category_totals[category] = category_totals.get(category, 0) + amount
-
-            summary_lines = [
-                "Finance Summary",
-                f"Total Spending: {total}",
-                "Category Breakdown:",
-            ]
-            for category, amount in category_totals.items():
-                summary_lines.append(f"{category}: {amount}")
-
-            summary_path = resolve_data_path("data/summary_export.txt")
-            summary_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(summary_path, mode="w") as output_file:
-                output_file.write("\n".join(summary_lines))
-
-            print(f"Summary exported to {summary_path}")
-
-    except FileNotFoundError:
-        print("No transactions file found yet.")
-
-
-def load_category_budgets(filename="data/category_budgets.csv"):
+def load_category_budgets(filename="data/category_budget.csv"):
     budgets = {}
     try:
-        budgets_path = resolve_data_path(filename)
-        with open(budgets_path, mode="r") as file:
-            reader = csv.DictReader(file)
+        with open(filename, newline="") as f:
+            reader = csv.DictReader(f)
             for row in reader:
-                budgets[row["Category"]] = float(row["Limit"])
+                budgets[row["category"]] = float(row["limit"])
     except FileNotFoundError:
-        print("No saved category budgets found yet.")
+        pass
     return budgets
 
+def save_category_budgets(budgets, filename="data/category_budget.csv"):
+    with open(filename, mode="w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["category", "limit"])
+        for cat, limit in budgets.items():
+            writer.writerow([cat, limit])
 
-def save_category_budgets(budgets, filename="data/category_budgets.csv"):
-    budgets_path = resolve_data_path(filename)
-    budgets_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(budgets_path, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["Category", "Limit"])
-        for category, limit in budgets.items():
-            writer.writerow([category, limit])
-    print(f"Category budgets saved to {budgets_path}")
+def resolve_data_path(filename):
+    return filename
 
+# ---------- Core functions ----------
 
+def add_transaction():
+    print("Add transaction logic here (reads/writes to transactions.csv).")
 
+def view_transactions():
+    print("View transactions logic here.")
 
-def main():
-    while True:
-        print("\nWelcome to Personal Finance Tracker!")
-        print("1. Add Transaction")
-        print("2. View Transactions")
-        print("3. Show Summary")
-        print("4. Exit")
-        print("5. Backup Transactions")
-        print("6. Visualize Spending")
-        print("7. Visualize Trends") 
-        print("8. Export Summary")
-        print("9. Check Budget")
-        print("10. Check Category Budgets")  # <-- Added
-        print("11. Update Category Budgets") 
-        print("12. Visualize Budgets vs Spending")
+def show_summary():
+    print("Show summary logic here.")
 
+def backup_transactions():
+    print("Backup transactions logic here.")
 
+def export_summary():
+    print("Export summary logic here.")
 
-        choice = input("Choose an option: ").strip()
-
-        if choice == "1":
-            add_transaction()
-        elif choice == "2":
-            view_transactions()
-        elif choice == "3":
-            show_summary()
-        elif choice == "4":
-            print("Goodbye!")
-            break
-        elif choice == "5":
-            backup_transactions()
-        elif choice == "6":  # <-- Added this branch
-            visualize_spending()
-        elif choice == "7":  # <-- Added this branch
-            visualize_trends()
-        elif choice == "8": 
-            export_summary()
-        elif choice == "9":
-            try:
-                limit = float(input("Enter your budget limit: "))
-                if limit <= 0:
-                    print("Budget limit must be positive.")
-                    continue
-                check_budget(limit)
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-
-        elif choice == "10":
-            budgets = load_category_budgets()
-            if not budgets:
-                print("No budgets saved. Let's create them.")
-                budgets = {}
-                while True:
-                    cat = input("Enter category name (or press Enter to stop): ").strip()
-                    if not cat:
-                        break
-                    try:
-                        limit = float(input(f"Enter budget limit for {cat}: "))
-                        if limit <= 0:
-                            print("Limit must be positive.")
-                            continue
-                        budgets[cat] = limit
-                    except ValueError:
-                        print("Invalid input. Please enter a number.")
-                if budgets:
-                    save_category_budgets(budgets)
-            check_category_budgets(budgets)
-
-        elif choice == "11":
-            update_category_budgets()
-        elif choice == "12":
-            visualize_budgets_vs_spending()
-        else:
-            print("Invalid choice. Please try again.")
-
-        
 def visualize_spending():
     try:
         transactions_path = resolve_data_path("data/transactions.csv")
@@ -291,14 +72,12 @@ def visualize_spending():
                 print("No transactions found yet.")
                 return
 
-            # Aggregate totals by category
             category_totals = {}
             for row in transactions:
                 amount = float(row[0])
                 category = row[1]
                 category_totals[category] = category_totals.get(category, 0) + amount
 
-            # Create pie chart
             labels = category_totals.keys()
             sizes = category_totals.values()
 
@@ -309,7 +88,6 @@ def visualize_spending():
 
     except FileNotFoundError:
         print("No transactions file found yet.")
-
 
 def visualize_trends():
     try:
@@ -322,18 +100,15 @@ def visualize_trends():
                 print("No transactions found yet.")
                 return
 
-            # Aggregate totals by date
             date_totals = {}
             for row in transactions:
                 amount = float(row[0])
                 date = row[2]
                 date_totals[date] = date_totals.get(date, 0) + amount
 
-            # Sort by date
             sorted_dates = sorted(date_totals.keys())
             amounts = [date_totals[d] for d in sorted_dates]
 
-            # Plot line chart
             plt.figure(figsize=(8,5))
             plt.plot(sorted_dates, amounts, marker="o", linestyle="-", color="blue")
             plt.xticks(rotation=45)
@@ -345,7 +120,6 @@ def visualize_trends():
 
     except FileNotFoundError:
         print("No transactions file found yet.")
-
 
 def check_budget(limit):
     try:
@@ -374,7 +148,6 @@ def check_budget(limit):
     except FileNotFoundError:
         print("No transactions file found yet.")
 
-
 def check_category_budgets(budgets):
     try:
         transactions_path = resolve_data_path("data/transactions.csv")
@@ -386,7 +159,6 @@ def check_category_budgets(budgets):
                 print("No transactions found yet.")
                 return
 
-            # Aggregate totals by category
             category_totals = {}
             for row in transactions:
                 amount = float(row[0])
@@ -408,32 +180,11 @@ def check_category_budgets(budgets):
     except FileNotFoundError:
         print("No transactions file found yet.")
 
-
-
-def update_category_budgets(filename="data/category_budgets.csv"):
+def update_category_budgets(filename="data/category_budget.csv"):
     budgets = load_category_budgets(filename)
-
     if not budgets:
-        print("No budgets saved yet. Let's create them.")
-        budgets = {}
-
-    while True:
-        cat = input("Enter category name to update (or press Enter to stop): ").strip()
-        if not cat:
-            break
-        try:
-            limit = float(input(f"Enter new budget limit for {cat}: "))
-            if limit <= 0:
-                print("Limit must be positive.")
-                continue
-            budgets[cat] = limit
-            print(f"Updated {cat} budget to {limit}")
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-
-    if budgets:
-        save_category_budgets(budgets, filename)
-
+        print("No budgets saved yet. Please edit category_budget.csv manually.")
+    save_category_budgets(budgets, filename)
 
 def visualize_budgets_vs_spending():
     budgets = load_category_budgets()
@@ -451,19 +202,16 @@ def visualize_budgets_vs_spending():
                 print("No transactions found yet.")
                 return
 
-            # Aggregate totals by category
             category_totals = {}
             for row in transactions:
                 amount = float(row[0])
                 category = row[1]
                 category_totals[category] = category_totals.get(category, 0) + amount
 
-            # Prepare data
             categories = list(budgets.keys())
             limits = [budgets[cat] for cat in categories]
             spent = [category_totals.get(cat, 0) for cat in categories]
 
-            # Dynamic colors and text summary
             colors = []
             print("\n--- Budget Status ---")
             for cat, limit, actual in zip(categories, limits, spent):
@@ -477,7 +225,6 @@ def visualize_budgets_vs_spending():
                     colors.append("green")
                     print(f"✅ {cat}: spent {actual}, limit {limit} → SAFE")
 
-            # Plot
             x = range(len(categories))
             plt.figure(figsize=(8,5))
             plt.bar(x, limits, width=0.4, label="Budget Limit", color="lightblue", align="center")
@@ -493,8 +240,47 @@ def visualize_budgets_vs_spending():
     except FileNotFoundError:
         print("No transactions file found yet.")
 
+# ---------- Main loop ----------
 
+def main():
+    while True:
+        choice = get_choice()
 
+        if choice == "1":
+            add_transaction()
+        elif choice == "2":
+            view_transactions()
+        elif choice == "3":
+            show_summary()
+        elif choice == "4":
+            print("Goodbye!")
+            break
+        elif choice == "5":
+            backup_transactions()
+        elif choice == "6":
+            visualize_spending()
+        elif choice == "7":
+            visualize_trends()
+        elif choice == "8":
+            export_summary()
+        elif choice == "9":
+            limit = get_budget_limit()
+            if limit <= 0:
+                print("Budget limit must be positive.")
+                continue
+            check_budget(limit)
+        elif choice == "10":
+            budgets = load_category_budgets()
+            if not budgets:
+                print("No budgets saved. Please edit category_budget.csv.")
+            check_category_budgets(budgets)
+        elif choice == "11":
+            update_category_budgets()
+        elif choice == "12":
+            visualize_budgets_vs_spending()
+        else:
+            print("Invalid choice in config.txt. Please update it.")
+            break
 
 if __name__ == "__main__":
     main()
