@@ -1,7 +1,7 @@
 Finance Summary
-Total Spending: 67074.0
+Total Spending: 121074.0
 Category Breakdown:
-Food: 17674.0
+Food: 71674.0
 school: 400.0
 School fees: 1000.0
 Transport: 15000.0

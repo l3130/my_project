@@ -19,30 +19,15 @@ env/
 # Ignore system files
 .DS_Store
 Thumbs.db
-F i n a n c e T r a c k e r _ v 1 . 2 . 0 / 
- 
- F i n a n c e T r a c k e r _ v 1 . 3 . 0 / 
- 
- F i n a n c e T r a c k e r _ v 1 . 2 . 0 / 
- 
- F i n a n c e T r a c k e r _ v 1 . 3 . 0 / 
+
+# Ignore FinanceTracker release folders
+FinanceTracker_v1.2.0/
+FinanceTracker_v1.3.0/
+FinanceTracker_v*/
+
 # Ignore build and distribution folders
 build/
 dist/
 
-# Ignore virtual environment
-.venv/
-
-# Ignore Python cache
-__pycache__/
-*.pyc
-
-# Ignore logs
-*.log
-
-# Ignore VS Code settings
-.vscode/
-FinanceTracker_v*/
-
- 
- 
+# Ignore executables
+*.exe
