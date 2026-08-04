@@ -42,6 +42,7 @@ __pycache__/
 
 # Ignore VS Code settings
 .vscode/
+FinanceTracker_v*/
 
  
  
