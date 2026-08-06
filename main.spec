@@ -34,13 +34,13 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # keep console=True so you see logs/errors
+    console=True,  
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='wallet_icon.ico'  # make sure this matches your renamed icon file
+    icon='icons/wallet_icon.ico'  
 )
 
 coll = COLLECT(
