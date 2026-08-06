@@ -65,6 +65,21 @@ class DataPathTests(unittest.TestCase):
                     with patch.object(os, "getcwd", return_value=str(dist_dir)):
                         self.assertEqual(main.resolve_data_path("data/transactions.csv"), expected_path)
 
+    def test_save_and_load_category_budgets_use_project_data_folder(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project_dir = Path(temp_dir) / "project"
+            data_dir = project_dir / "data"
+            data_dir.mkdir(parents=True)
+            expected_path = data_dir / "category_budget.csv"
+
+            with patch.object(main, "__file__", str(project_dir / "main.py")):
+                with patch.object(os, "getcwd", return_value=str(project_dir)):
+                    budgets = {"Food": 500.0, "Rent": 1200.0}
+                    main.save_category_budgets(budgets, "data/category_budget.csv")
+                    self.assertTrue(expected_path.exists())
+                    loaded = main.load_category_budgets("data/category_budget.csv")
+                    self.assertEqual(loaded, budgets)
+
 
 if __name__ == "__main__":
     unittest.main()

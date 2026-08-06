@@ -1,65 +1,255 @@
 import csv
+import os
+import sys
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 
-# ---------- Helpers for file-based input ----------
+# ---------- Data path helpers ----------
 
-def get_choice():
-    try:
-        with open("config.txt") as f:
-            for line in f:
-                if line.startswith("choice="):
-                    return line.split("=")[1].strip()
-    except FileNotFoundError:
-        return "4"  # default: exit
-    return "4"
+def resolve_data_path(relative_path):
+    """Resolve a data file path for source and frozen executable runs."""
+    relative_path = Path(relative_path)
+
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidate = Path(meipass) / relative_path
+            if candidate.exists():
+                return candidate
+
+        executable_dir = Path(sys.executable).absolute().parent
+        candidate = executable_dir.parent / relative_path
+        if candidate.exists():
+            return candidate
+
+        return Path(os.getcwd()) / relative_path
+
+    project_dir = Path(__file__).absolute().parent
+    candidate = project_dir / relative_path
+    if candidate.exists():
+        return candidate
+
+    return Path(os.getcwd()) / relative_path
+
 
 def get_budget_limit():
-    try:
-        with open("budget.txt") as f:
-            for line in f:
-                if line.startswith("limit="):
-                    return float(line.split("=")[1].strip())
-    except:
-        return 0
-    return 0
+    while True:
+        try:
+            limit = float(input("Enter your budget limit: ").strip())
+            if limit > 0:
+                return limit
+            print("Budget limit must be a positive number.")
+        except ValueError:
+            print("Please enter a valid numeric budget limit.")
+
 
 def load_category_budgets(filename="data/category_budget.csv"):
+    path = resolve_data_path(filename)
+    if not path.exists():
+        return {}
+
     budgets = {}
     try:
-        with open(filename, newline="") as f:
-            reader = csv.DictReader(f)
+        with open(path, mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
             for row in reader:
-                budgets[row["category"]] = float(row["limit"])
+                if not row or row[0].strip().lower().startswith("category"):
+                    continue
+                try:
+                    category = row[0].strip()
+                    limit = float(row[1])
+                    budgets[category] = limit
+                except (IndexError, ValueError):
+                    continue
     except FileNotFoundError:
-        pass
+        return {}
+
     return budgets
 
-def save_category_budgets(budgets, filename="data/category_budget.csv"):
-    with open(filename, mode="w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["category", "limit"])
-        for cat, limit in budgets.items():
-            writer.writerow([cat, limit])
 
-def resolve_data_path(filename):
-    return filename
+def save_category_budgets(budgets, filename="data/category_budget.csv"):
+    path = resolve_data_path(filename)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, mode="w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["category", "limit"])
+        for category, limit in budgets.items():
+            writer.writerow([category, limit])
+
+
+# ---------- Helpers for interactive input ----------
+
+def get_choice():
+    choice = input(
+        "\nPlease select an option:\n"
+        "1. Add transaction\n"
+        "2. View transactions\n"
+        "3. Show summary\n"
+        "4. Exit\n"
+        "5. Backup transactions\n"
+        "6. Visualize spending\n"
+        "7. Visualize trends\n"
+        "8. Export summary\n"
+        "9. Check budget limit\n"
+        "10. Check category budgets\n"
+        "11. Update category budgets\n"
+        "12. Visualize budgets vs spending\n"
+        "13. Reset transactions\n"
+        "14. Clear transactions\n"
+        "15. Archive transactions\n"
+        "Enter option number: "
+    )
+    return choice.strip()
 
 # ---------- Core functions ----------
 
 def add_transaction():
-    print("Add transaction logic here (reads/writes to transactions.csv).")
+    try:
+        amount = float(input("Enter transaction amount: ").strip())
+        category = input("Enter category: ").strip()
+        date = input("Enter date (YYYY-MM-DD): ").strip()
+
+        transactions_path = resolve_data_path("data/transactions.csv")
+        transactions_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(transactions_path, mode="a", encoding="utf-8", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([amount, category, date])
+
+        print("✅ Transaction added successfully!")
+
+    except ValueError:
+        print("Please enter a valid numeric amount.")
+
 
 def view_transactions():
-    print("View transactions logic here.")
+    try:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            print("\n--- Transactions ---")
+            for idx, row in enumerate(transactions, start=1):
+                amount, category, date = row
+                print(f"{idx}. {date} | {category} | {amount}")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
 
 def show_summary():
-    print("Show summary logic here.")
+    try:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        with open(transactions_path, mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+            if not transactions:
+                print("No transactions found yet.")
+                return
+
+            total = sum(float(row[0]) for row in transactions)
+            print("\n--- Summary ---")
+            print(f"Total transactions: {len(transactions)}")
+            print(f"Total spending: {total}")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
 
 def backup_transactions():
-    print("Backup transactions logic here.")
+    try:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        backup_path = resolve_data_path("data/transactions_backup.csv")
+
+        if not transactions_path.exists():
+            print("No transactions file found yet.")
+            return
+
+        import shutil
+        shutil.copy(transactions_path, backup_path)
+        print(f"✅ Backup created at {backup_path}")
+
+    except Exception as e:
+        print(f"Backup failed: {e}")
+
 
 def export_summary():
-    print("Export summary logic here.")
+    try:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        export_path = resolve_data_path("data/summary.txt")
+
+        with open(transactions_path, mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            transactions = list(reader)
+
+        if not transactions:
+            print("No transactions found yet.")
+            return
+
+        total = sum(float(row[0]) for row in transactions)
+
+        with open(export_path, mode="w", encoding="utf-8") as f:
+            f.write(f"Total transactions: {len(transactions)}\n")
+            f.write(f"Total spending: {total}\n")
+
+        print(f"✅ Summary exported to {export_path}")
+
+    except FileNotFoundError:
+        print("No transactions file found yet.")
+
+
+
+def reset_transactions():
+    transactions_path = resolve_data_path("data/transactions.csv")
+    if transactions_path.exists():
+        transactions_path.unlink()  # delete the file
+        print("✅ All transactions have been reset (file deleted).")
+    else:
+        print("No transactions file found to reset.")
+
+
+
+
+
+def clear_transactions():
+    transactions_path = resolve_data_path("data/transactions.csv")
+    transactions_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(transactions_path, mode="w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file)
+        # optional: write header row
+        writer.writerow(["amount", "category", "date"])
+    print("✅ Transactions cleared (file emptied).")
+
+
+
+
+
+
+def archive_transactions():
+    try:
+        transactions_path = resolve_data_path("data/transactions.csv")
+        archive_path = resolve_data_path("data/transactions_archive.csv")
+
+        if not transactions_path.exists():
+            print("No transactions file found to archive.")
+            return
+
+        import shutil
+        shutil.move(transactions_path, archive_path)
+        print(f"✅ Transactions archived to {archive_path}")
+
+    except Exception as e:
+        print(f"Archiving failed: {e}")
+
+
 
 def visualize_spending():
     try:
@@ -278,6 +468,13 @@ def main():
             update_category_budgets()
         elif choice == "12":
             visualize_budgets_vs_spending()
+
+        elif choice == "13":
+            reset_transactions()
+        elif choice == "14":
+            clear_transactions()
+        elif choice == "15":
+            archive_transactions()
         else:
             print("Invalid choice in config.txt. Please update it.")
             break
