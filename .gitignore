@@ -19,6 +19,15 @@ env/
 # Ignore system files
 .DS_Store
 Thumbs.db
-/build/
-/dist/
+
+# Ignore FinanceTracker release folders
+FinanceTracker_v1.2.0/
+FinanceTracker_v1.3.0/
+FinanceTracker_v*/
+
+# Ignore build and distribution folders
+build/
+dist/
+
+# Ignore executables
 *.exe
