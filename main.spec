@@ -1,13 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import matplotlib
+
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        ('data', 'data'), 
+        ('icons', 'icons'),
+        # Include matplotlib data files for the interactive Tk backend.
+        (matplotlib.get_data_path(), 'matplotlib/mpl-data'),
+    ],
+    hiddenimports=['matplotlib.backends.backend_tkagg'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
