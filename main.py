@@ -308,8 +308,6 @@ def reset_transactions():
 
 
 
-
-
 def clear_transactions():
     transactions_path = resolve_data_path("data/transactions.csv", writable=True)
     transactions_path.parent.mkdir(parents=True, exist_ok=True)
@@ -318,9 +316,6 @@ def clear_transactions():
         # optional: write header row
         writer.writerow(["amount", "category", "date"])
     print("✅ Transactions cleared (file emptied).")
-
-
-
 
 
 
