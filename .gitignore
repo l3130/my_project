@@ -21,6 +21,7 @@ env/
 Thumbs.db
 
 # Ignore FinanceTracker release folders
+FinanceTracker_v*.zip
 FinanceTracker_v1.2.0/
 FinanceTracker_v1.3.0/
 FinanceTracker_v*/
