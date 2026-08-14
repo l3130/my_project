@@ -32,3 +32,9 @@ dist/
 
 # Ignore executables
 *.exe
+
+# Ignore runtime data artifacts
+data/*_backup.csv
+data/*_archive.csv
+data/summary*.txt
+data/*.png
