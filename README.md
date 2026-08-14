@@ -7,13 +7,14 @@ Track expenses, manage budgets, and export summaries with ease.
 
 ## 🚀 Latest Release
 Download the latest version here:  
-[FinanceTracker v1.2.0](https://github.com/<your-username>/<your-repo>/releases/tag/v1.2.0)
+[FinanceTracker v1.4.0](https://github.com/l3130/my_project/releases/tag/v1.4.0)
 
 ---
 
 ## 📦 Features
 - Expense tracking with CSV export
 - Category budgets with warnings
+- Popup charts for spending, trends, and budget comparisons
 - Clean release folder structure
 - Icons and guides included
 - Easy to run: just double‑click `main.exe`
@@ -25,7 +26,8 @@ Download the latest version here:
 2. Extract the contents to a folder on your computer.
 3. Open the folder and double‑click `main.exe`.
 4. Read `START_HERE.txt` for setup instructions.
-5. Track your expenses in `transactions.csv` and manage budgets in `category_budget.csv`.
+5. Keep the `main` folder beside `main.exe`.
+6. Track your expenses in `transactions.csv` and manage budgets in `category_budgets.csv`.
 
 ---
 
