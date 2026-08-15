@@ -9,9 +9,8 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('data', 'data'), 
+        ('data', 'data'),
         ('icons', 'icons'),
-        # Include matplotlib data files for the interactive Tk backend.
         (matplotlib.get_data_path(), 'matplotlib/mpl-data'),
     ],
     hiddenimports=['matplotlib.backends.backend_tkagg'],
