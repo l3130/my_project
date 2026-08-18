@@ -32,14 +32,14 @@ Download the latest version here:
 ---
 
 ## 📜 Changelog
-See [CHANGELOG.txt](FinanceTracker_v1.2.0/CHANGELOG.txt) for version history.
+See the [Releases page](https://github.com/l3130/my_project/releases) for version history.
 
 ---
 
 ## 👩‍💻 For Developers
 - Source code is available in this repository.
 - Requirements are listed in `requirements.txt`.
-- Build instructions are in `main.spec`.
+- Build instructions are in `build/main.spec`.
 
 ---
 
