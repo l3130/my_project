@@ -1,6 +1,2 @@
-Category,Limit
-Food,45000.0
-Transport,15000.0
-Entertainment,10000.0
-Rent,47500.0
-Rent10000,10000.0
+category,limit
+Food,400.0
